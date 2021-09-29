@@ -118,9 +118,9 @@ namespace GameView
             Brush b;
             Color c;
             if (piece > 0)
-                c = Color.Red;
+                c = Color.DarkRed;
             else
-                c = Color.Gray;
+                c = Color.FromArgb(100, 100, 100); // dark gray
 
             b = new SolidBrush(c);
 
@@ -129,12 +129,12 @@ namespace GameView
 
             g.FillEllipse(b, new Rectangle(offsetLoc, offsetSize));
 
-            if (piece == 2)
+            if (Math.Abs(piece) == 2)
             {
                 offsetSize /= 2;
                 offsetLoc = location + ((size - offsetSize) / 2);
                 c = ControlPaint.Dark(c);
-                b = new SolidBrush(c);
+                b = new SolidBrush(Color.Black);
 
                 g.FillEllipse(b, new Rectangle(offsetLoc, offsetSize));
             }
