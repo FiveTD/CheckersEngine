@@ -27,7 +27,8 @@ namespace GameView
         public event ClickSpace SpaceClicked;
 
         private HashSet<Animation> animations = new HashSet<Animation>();
-        private HashSet<(int, int)> highlighted = new HashSet<(int, int)>();
+        private HashSet<(int, int)> highlightedPieces = new HashSet<(int, int)>();
+        private HashSet<(int, int)> highlightedSpaces = new HashSet<(int, int)>();
 
         sbyte[,] board;
         Size squareSize;
@@ -142,7 +143,7 @@ namespace GameView
 
         public void HighlightPiece(int x, int y, Color highlight)
         {
-            if (!highlighted.Add((x, y))) // already highlighted
+            if (!highlightedPieces.Add((x, y))) // already highlighted
                 return;
 
             Point loc = new Point(y * squareSize.Height, x * squareSize.Width);
@@ -151,11 +152,23 @@ namespace GameView
                 animations.Add(new PieceAnimation(loc, highlight));
         }
 
+        public void HighlightSpace(int x, int y, Color highlight)
+        {
+            if (!highlightedSpaces.Add((x, y))) // already highlighted
+                return;
+
+            Point loc = new Point(y * squareSize.Height, x * squareSize.Width);
+
+            lock (animations)
+                animations.Add(new SpaceAnimation(loc, highlight));
+        }
+
         public void ClearAnimations()
         {
             lock (animations)
                 animations.Clear();
-            highlighted.Clear();
+            highlightedPieces.Clear();
+            highlightedSpaces.Clear();
         }
 
         protected override void OnMouseDown(MouseEventArgs e)

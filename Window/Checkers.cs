@@ -78,7 +78,10 @@ namespace GameView
 
         private void OnPieceSelected(HashSet<Move> legalMoves)
         {
-            // animations :DD
+            foreach (Move move in legalMoves)
+            {
+                checkerboard.HighlightSpace(move.ToX, move.ToY, Color.Yellow);
+            }
         }
 
         private void OnSelectionError((int, int) errorSpace)
@@ -88,19 +91,22 @@ namespace GameView
 
         private void OnPieceMoved(Move move, Board b)
         {
-            System.Diagnostics.Debug.WriteLine("opm called " + DateTime.Now);
+            //System.Diagnostics.Debug.WriteLine("opm called " + DateTime.Now);
             // animations :DD
 
             checkerboard.ClearAnimations();
             checkerboard.SetBoard(b.GetBoard());
 
             checkerboard.HighlightPiece(move.ToX, move.ToY, Color.Cyan);
-            System.Diagnostics.Debug.WriteLine("opm finished " + DateTime.Now);
+            checkerboard.HighlightSpace(move.FromX, move.FromY, Color.Cyan);
+            //System.Diagnostics.Debug.WriteLine("opm finished " + DateTime.Now);
         }
 
         private void OnGameWin(bool winner)
         {
-
+            Thread.Sleep(1000);
+            checkerboard.ClearAnimations();
+            controller.StartGame(PlayerType.Local, PlayerType.AI);
         }
 
         private void LogMessage(string text)

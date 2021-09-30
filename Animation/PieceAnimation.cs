@@ -33,4 +33,34 @@ namespace GameView
             g.FillEllipse(b, new Rectangle(offsetLoc, offsetSize));
         }
     }
+
+    public class SpaceAnimation : LoopAnimation
+    {
+        Color highlightColor;
+
+        public SpaceAnimation(Point location, Color highlight) :
+            base(120, 0, 119, location)
+        {
+            highlightColor = highlight;
+        }
+
+        protected override void DrawFrame(Graphics g)
+        {
+            Color adjColor;
+            if (currentFrame <= 60)
+            {
+                adjColor = Color.FromArgb(currentFrame * 2, highlightColor);
+            }
+            else
+            {
+                adjColor = Color.FromArgb((120 - currentFrame) * 2, highlightColor);
+            }
+
+            Brush b = new SolidBrush(adjColor);
+
+            Size offsetSize = new Size(100, 100);
+
+            g.FillRectangle(b, new Rectangle(location, offsetSize));
+        }
+    }
 }
