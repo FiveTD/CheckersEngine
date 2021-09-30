@@ -143,6 +143,7 @@ namespace Game
         /// Returns all legal moves on the board.
         /// </summary>
         /// <returns></returns>
+        /// 
         public HashSet<Move> LegalMoves()
         {
             if (justMoved != (-1, -1) && Turn == PlayerAt(justMoved.Item1, justMoved.Item2))
@@ -151,38 +152,41 @@ namespace Game
             HashSet<Move> moves = new HashSet<Move>();
             JumpRequired = false;
 
-            for (int i = 0; i < Size; i++)
+            for (int i = 0; i < Size; i ++)
             {
-                for (int j = 0; j < Size; j++)
+                for (int j = 0; j < Size; j += 2)
                 {
-                    for (int k = i - 2; k <= i + 2; k++)
+                    if (i % 2 != j % 2) j++; //black offset
+                    for (int k = -1; k <= 1; k += 2)
                     {
-                        for (int l = j - 2; l <= j + 2; l++)
+                        for (int l = -1; l <= 1; l += 2)
                         {
                             Move move = new Move
                             {
                                 FromX = i,
                                 FromY = j,
-                                ToX = k,
-                                ToY = l
+                                ToX = i + k,
+                                ToY = j + l
                             };
 
-                            if (IsLegalMove(move))
+                            if (!JumpRequired && IsLegalMove(move))
                             {
-                                if (IsJump(move))
+                                moves.Add(move);
+                            }
+                            else
+                            {
+                                move.ToX += k;
+                                move.ToY += l;
+                                if (IsLegalMove(move))
                                 {
                                     if (!JumpRequired)
                                     {
                                         moves.Clear();
                                         JumpRequired = true;
                                     }
-                                }
-                                else if (JumpRequired)
-                                {
-                                    continue;
-                                }
 
-                                moves.Add(move);
+                                    moves.Add(move);
+                                }
                             }
                         }
                     }

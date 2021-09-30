@@ -1,6 +1,6 @@
 ﻿using System;
 using Game;
-using Analyzer;
+using Minimax;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -39,6 +39,7 @@ namespace EngineController
         private Board board;
 
         private Dictionary<bool, PlayerType> players;
+        private Analyzer AI;
 
         private int depth;
 
@@ -55,6 +56,8 @@ namespace EngineController
             players.Add(false, PlayerType.None);
 
             selectedPiece = (-1, -1);
+
+            AI = new Analyzer();
         }
 
         public void SetAIDepth(int depth)
@@ -83,8 +86,6 @@ namespace EngineController
 
                 if (moves.Count > 0)
                 {
-                    Debug("piece selected: " + (x, y));
-
                     selectedPiece = (x, y);
                     PieceSelected(moves);
                     return;
@@ -103,7 +104,6 @@ namespace EngineController
 
                 if (board.IsLegalMove(move))
                 {
-                    Debug("moving");
                     MovePiece(move);
                     selectedPiece = (-1, -1);
                     return;
@@ -111,19 +111,17 @@ namespace EngineController
 
                 else if (selectedPiece == (x, y))
                 {
-                    Debug("deselecting");
                     selectedPiece = (-1, -1);
                     return;
                 }
             }
 
-            Debug("error @ " + (x, y));
             ErrorOnSelection((x, y));
         }
 
         private void TurnStart()
         {
-            System.Diagnostics.Debug.WriteLine("ts start " + DateTime.Now);
+            //System.Diagnostics.Debug.WriteLine("ts start " + DateTime.Now);
             if (board.Win(out bool winner))
             {
                 gameWon = true;
@@ -135,50 +133,71 @@ namespace EngineController
             switch (next)
             {
                 case PlayerType.Local:
-                    TurnStarted(next, board.LegalMoves());
+                    Render("TurnStarted", next, board.LegalMoves());
                     break;
                 case PlayerType.AI:
                     TurnStarted(next, null);
-                    Move move = MinMax.Analyze(depth, board);
+                    Move move = AI.Analyze(depth, board);
                     MovePiece(move);
                     break;
             }
-            System.Diagnostics.Debug.WriteLine("ts finish " + DateTime.Now);
+            //System.Diagnostics.Debug.WriteLine("ts finish " + DateTime.Now);
         }
 
         public void MovePiece(Move move)
         {
-            System.Diagnostics.Debug.WriteLine("mp start " + DateTime.Now);
+            //System.Diagnostics.Debug.WriteLine("mp start " + DateTime.Now);
             if (gameWon)
                 return;
 
             board.Move(move, false); //flags if jump
 
-            System.Diagnostics.Debug.WriteLine("pre thread " + DateTime.Now);
+            //System.Diagnostics.Debug.WriteLine("pre thread " + DateTime.Now);
 
-            FinishRender();
-            renderThread = new Thread(Redraw);
-            renderThread.Start(move);
+            Render("MovedPiece", move, board);
 
             TurnStart();
         }
 
         /// <summary>
-        /// Waits for the render thread to complete.
+        /// Starts the render thread.
         /// </summary>
-        private void FinishRender()
+        private void Render(string eventName, params object[] args)
         {
+            ThreadArgs a = new ThreadArgs
+            {
+                Event = eventName,
+                Args = args
+            };
+
             if (!(renderThread is null))
                 renderThread.Join();
+
+            renderThread = new Thread(Redraw);
+            renderThread.Start(a);
         }
 
         /// <summary>
         /// Allows render events to be called on a separate thread.
         /// </summary>
-        private void Redraw(object m)
+        private void Redraw(object a)
         {
-            Move move = m as Move;
-            MovedPiece(move, board);
+            ThreadArgs args = a as ThreadArgs;
+            switch (args.Event)
+            {
+                case "MovedPiece":
+                    MovedPiece(args.Args[0] as Move, args.Args[1] as Board);
+                    break;
+                case "TurnStarted":
+                    TurnStarted((PlayerType)args.Args[0], args.Args[1] as HashSet<Move>);
+                    break;
+            }
+        }
+
+        private class ThreadArgs
+        {
+            public string Event { get; set; }
+            public object[] Args { get; set; }
         }
     }
 }
