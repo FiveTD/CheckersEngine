@@ -20,7 +20,7 @@ namespace GameView
             Application.SetCompatibleTextRenderingDefault(false);
 
             GameController c = new GameController();
-            c.SetAIDepth(5);
+            c.SetAIDepth(7);
             Application.Run(new Checkers(c));
         }
     }

@@ -47,8 +47,6 @@ namespace EngineController
 
         private bool gameWon;
 
-        Thread renderThread;
-
         public GameController()
         {
             players = new Dictionary<bool, PlayerType>();
@@ -65,10 +63,10 @@ namespace EngineController
             this.depth = depth;
         }
 
-        public void StartGame(PlayerType p1, PlayerType p2, int size = 8, int rows = 3)
+        public void StartGame(int size = 8, int rows = 3)
         {
-            players[true] = p1;
-            players[false] = p2;
+            players[true] = PlayerType.AI;
+            players[false] = PlayerType.Local;
 
             board = new Board(size, rows);
             BoardCreated(board);
@@ -102,14 +100,19 @@ namespace EngineController
                     ToY = y
                 };
 
-                if (board.IsLegalMove(move))
+                HashSet<Move> moves = board.LegalMoves(selectedPiece.Item1, selectedPiece.Item2);
+
+                foreach (Move legal in moves)
                 {
-                    MovePiece(move);
-                    selectedPiece = (-1, -1);
-                    return;
+                    if (legal.Equals(move))
+                    {
+                        MovePiece(legal); //more developed, includes chains etc
+                        selectedPiece = (-1, -1);
+                        return;
+                    }
                 }
 
-                else if (selectedPiece == (x, y))
+                if (selectedPiece == (x, y))
                 {
                     selectedPiece = (-1, -1);
                     return;
@@ -121,7 +124,6 @@ namespace EngineController
 
         private void TurnStart()
         {
-            //System.Diagnostics.Debug.WriteLine("ts start " + DateTime.Now);
             if (board.Win(out bool winner))
             {
                 gameWon = true;
@@ -133,7 +135,7 @@ namespace EngineController
             switch (next)
             {
                 case PlayerType.Local:
-                    Render("TurnStarted", next, board.LegalMoves());
+                    TurnStarted(next, board.LegalMoves());
                     break;
                 case PlayerType.AI:
                     TurnStarted(next, null);
@@ -141,63 +143,18 @@ namespace EngineController
                     MovePiece(move);
                     break;
             }
-            //System.Diagnostics.Debug.WriteLine("ts finish " + DateTime.Now);
         }
 
         public void MovePiece(Move move)
         {
-            //System.Diagnostics.Debug.WriteLine("mp start " + DateTime.Now);
             if (gameWon)
                 return;
 
             board.Move(move, false); //flags if jump
 
-            //System.Diagnostics.Debug.WriteLine("pre thread " + DateTime.Now);
-
-            Render("MovedPiece", move, board);
+            MovedPiece(move, board);
 
             TurnStart();
-        }
-
-        /// <summary>
-        /// Starts the render thread.
-        /// </summary>
-        private void Render(string eventName, params object[] args)
-        {
-            ThreadArgs a = new ThreadArgs
-            {
-                Event = eventName,
-                Args = args
-            };
-
-            if (!(renderThread is null))
-                renderThread.Join();
-
-            renderThread = new Thread(Redraw);
-            renderThread.Start(a);
-        }
-
-        /// <summary>
-        /// Allows render events to be called on a separate thread.
-        /// </summary>
-        private void Redraw(object a)
-        {
-            ThreadArgs args = a as ThreadArgs;
-            switch (args.Event)
-            {
-                case "MovedPiece":
-                    MovedPiece(args.Args[0] as Move, args.Args[1] as Board);
-                    break;
-                case "TurnStarted":
-                    TurnStarted((PlayerType)args.Args[0], args.Args[1] as HashSet<Move>);
-                    break;
-            }
-        }
-
-        private class ThreadArgs
-        {
-            public string Event { get; set; }
-            public object[] Args { get; set; }
         }
     }
 }

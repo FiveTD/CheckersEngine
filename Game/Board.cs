@@ -151,45 +151,21 @@ namespace Game
 
             HashSet<Move> moves = new HashSet<Move>();
             JumpRequired = false;
+            bool jumped = false;
 
             for (int i = 0; i < Size; i ++)
             {
                 for (int j = 0; j < Size; j += 2)
                 {
                     if (i % 2 != j % 2) j++; //black offset
-                    for (int k = -1; k <= 1; k += 2)
+                    HashSet<Move> newMoves = LegalMoves(i, j);
+                    if (JumpRequired && !jumped)
                     {
-                        for (int l = -1; l <= 1; l += 2)
-                        {
-                            Move move = new Move
-                            {
-                                FromX = i,
-                                FromY = j,
-                                ToX = i + k,
-                                ToY = j + l
-                            };
-
-                            if (!JumpRequired && IsLegalMove(move))
-                            {
-                                moves.Add(move);
-                            }
-                            else
-                            {
-                                move.ToX += k;
-                                move.ToY += l;
-                                if (IsLegalMove(move))
-                                {
-                                    if (!JumpRequired)
-                                    {
-                                        moves.Clear();
-                                        JumpRequired = true;
-                                    }
-
-                                    moves.Add(move);
-                                }
-                            }
-                        }
+                        moves.Clear();
+                        jumped = true;
                     }
+
+                    moves.UnionWith(newMoves);
                 }
             }
 
@@ -207,9 +183,9 @@ namespace Game
         {
             HashSet<Move> moves = new HashSet<Move>();
 
-            for (int i = -2; i <= 2; i++)
+            for (int i = -1; i <= 1; i += 2)
             {
-                for (int j = -2; j <= 2; j++)
+                for (int j = -1; j <= 1; j += 2)
                 {
                     Move move = new Move
                     {
@@ -219,22 +195,28 @@ namespace Game
                         ToY = y + j
                     };
 
-                    if (IsLegalMove(move))
+                    if (!JumpRequired && IsLegalMove(move))
                     {
-                        if (IsJump(move))
+                        moves.Add(move);
+                    }
+                    else //jump?
+                    {
+                        move.ToX += i;
+                        move.ToY += j;
+                        if (IsLegalMove(move)) // is jump
                         {
                             if (!JumpRequired)
                             {
                                 moves.Clear();
                                 JumpRequired = true;
                             }
-                        }
-                        else if (JumpRequired)
-                        {
-                            continue;
-                        }
 
-                        moves.Add(move);
+                            Move(move, false, false);
+                            move.chains = LegalMoves(move.ToX, move.ToY); // will be jumps available at next destination
+                            Unmove();
+
+                            moves.Add(move);
+                        }
                     }
                 }
             }
@@ -287,7 +269,7 @@ namespace Game
         /// Assumes legality.
         /// </summary>
         /// <returns>The legal moves after the performed move.</returns>
-        public HashSet<Move> Move(Move move, bool calcNext = true)
+        public HashSet<Move> Move(Move move, bool calcNext = true, bool switchTurn = true)
         {
             sbyte piece = SignedPieceAt(move.FromX, move.FromY);
             bool turn = PlayerAt(move.FromX, move.FromY);
@@ -319,16 +301,12 @@ namespace Game
             move.Turn = turn;
             moveHistory.AddLast(move);
 
-            if (isJump)
+            if (move.chains.Count > 0)
             {
-                // move calculation required to determine turn switch
-                JumpRequired = true;
-                HashSet<Move> moves = LegalMoves(move.ToX, move.ToY);
-                if (moves.Count > 0)
-                    return moves;
+                return move.chains;
             }
 
-            Turn = !Turn;
+            if (switchTurn) Turn = !Turn;
             if (calcNext)
                 return LegalMoves();
             else
@@ -406,8 +384,14 @@ namespace Game
         public sbyte Piece { get; set; }
         public sbyte Jumped { get; set; }
         public bool Turn { get; set; }
+        public HashSet<Move> chains { get; set; }
 
-        /*public override bool Equals(object obj)
+        public Move()
+        {
+            chains = new HashSet<Move>();
+        }
+
+        public override bool Equals(object obj)
         {
             if (obj is null) return false;
 
@@ -415,6 +399,11 @@ namespace Game
 
             return FromX == o.FromX && FromY == o.FromY &&
                 ToX == o.ToX && ToY == o.ToY;
-        }*/
+        }
+
+        public override int GetHashCode()
+        {
+            return FromX + FromY * 10 + ToX * 100 + ToY * 1000;
+        }
     }
 }
