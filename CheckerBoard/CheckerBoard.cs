@@ -126,11 +126,7 @@ namespace GameView
         private void DrawPiece(Graphics g, Point location, Size size, sbyte piece)
         {
             Brush b;
-            Color c;
-            if (piece > 0)
-                c = Color.DarkRed;
-            else
-                c = Color.FromArgb(100, 100, 100); // dark gray
+            Color c = (piece > 0) ? Color.DarkRed : Color.FromArgb(100, 100, 100);
 
             b = new SolidBrush(c);
 
@@ -144,7 +140,7 @@ namespace GameView
                 offsetSize /= 2;
                 offsetLoc = location + ((size - offsetSize) / 2);
                 c = ControlPaint.Dark(c);
-                b = new SolidBrush(Color.Black);
+                b = new SolidBrush(c);
 
                 g.FillEllipse(b, new Rectangle(offsetLoc, offsetSize));
             }
