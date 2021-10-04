@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Text;
 using System.Windows.Forms;
+using System.Diagnostics;
 
 namespace GameView
 {
@@ -58,6 +59,10 @@ namespace GameView
 
         protected override void OnPaint(PaintEventArgs e)
         {
+            //Stopwatch sw = new Stopwatch();
+            //
+            //sw.Start();
+
             base.OnPaint(e);
 
             using Brush odd = new SolidBrush(OddColor);
@@ -112,6 +117,10 @@ namespace GameView
                     animations.Remove(anim);
                 }
             }
+
+            //sw.Stop();
+            //
+            //Debug.WriteLine("Elapsed={0}", sw.Elapsed);
         }
 
         private void DrawPiece(Graphics g, Point location, Size size, sbyte piece)

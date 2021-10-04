@@ -21,10 +21,10 @@ namespace EngineController
         public delegate void ErrorSelect((int, int) selection);
         public event ErrorSelect ErrorOnSelection;
 
-        public delegate void PieceMove(Move move, Board board);
+        public delegate void PieceMove(Move move, sbyte[,] board);
         public event PieceMove MovedPiece;
 
-        public delegate void CreateBoard(Board board);
+        public delegate void CreateBoard(sbyte[,] board);
         public event CreateBoard BoardCreated;
 
         public delegate void WinGame(bool winner);
@@ -33,11 +33,7 @@ namespace EngineController
         public delegate void StartTurn(PlayerType player, HashSet<Move> legalMoves);
         public event StartTurn TurnStarted;
 
-        public delegate void DebugMessage(string text);
-        public event DebugMessage Debug;
-
         private Board board;
-
         private Dictionary<bool, PlayerType> players;
         private Analyzer AI;
 
@@ -65,11 +61,11 @@ namespace EngineController
 
         public void StartGame(int size = 8, int rows = 3)
         {
-            players[true] = PlayerType.AI;
-            players[false] = PlayerType.Local;
+            players[true] = PlayerType.Local;
+            players[false] = PlayerType.AI;
 
             board = new Board(size, rows);
-            BoardCreated(board);
+            BoardCreated(board.GetBoard());
 
             gameWon = false;
 
@@ -124,11 +120,22 @@ namespace EngineController
 
         private void TurnStart()
         {
+            //System.Diagnostics.Debug.WriteLine("start turnstart " + DateTime.Now);
+
             if (board.Win(out bool winner))
             {
                 gameWon = true;
                 GameWon(winner);
+
+                Thread.Sleep(1000);
+
+                players[winner] = PlayerType.Local;
+                players[!winner] = PlayerType.AI;
+                StartGame();
+                return;
             }
+
+            //System.Diagnostics.Debug.WriteLine("post win " + DateTime.Now);
 
             PlayerType next = players[board.Turn];
 
@@ -138,21 +145,30 @@ namespace EngineController
                     TurnStarted(next, board.LegalMoves());
                     break;
                 case PlayerType.AI:
+                    //System.Diagnostics.Debug.WriteLine("pre turnstarted event " + DateTime.Now);
                     TurnStarted(next, null);
-                    Move move = AI.Analyze(depth, board);
-                    MovePiece(move);
+                    //System.Diagnostics.Debug.WriteLine("post turnstarted event " + DateTime.Now);
+                    Thread moveThread = new Thread(AIMove);
+                    moveThread.Start();
                     break;
             }
         }
 
+        private void AIMove()
+        {
+            Move move = AI.Analyze(depth, board);
+            //System.Diagnostics.Debug.WriteLine("pre ai movepiece " + DateTime.Now);
+            MovePiece(move);
+            //System.Diagnostics.Debug.WriteLine("post ai movepiece " + DateTime.Now);
+        }
+
         public void MovePiece(Move move)
         {
-            if (gameWon)
-                return;
+            board.Move(move, false);
 
-            board.Move(move, false); //flags if jump
-
-            MovedPiece(move, board);
+            //System.Diagnostics.Debug.WriteLine("pre movedpiece " + DateTime.Now);
+            MovedPiece(move, board.GetBoard());
+            //System.Diagnostics.Debug.WriteLine("post movedpiece " + DateTime.Now);
 
             TurnStart();
         }

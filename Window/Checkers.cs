@@ -16,7 +16,6 @@ namespace GameView
     public partial class Checkers : Form
     {
         CheckerBoard checkerboard;
-        Label debug;
 
         GameController controller;
 
@@ -42,29 +41,24 @@ namespace GameView
             controller.ErrorOnSelection += ErrorOnSelectionListener;
             controller.GameWon += GameWonListener;
 
-            debug = new Label();
-            debug.Location = new Point(0, 800);
-            debug.Size = new Size(800, 50);
-            debug.Text = "Debug";
-            Controls.Add(debug);
-            controller.Debug += LogMessage;
-
             animationUpdate = new Thread(Animate);
         }
 
         #region Listeners
-        private void BoardCreatedListener(Board board)
+        private void BoardCreatedListener(sbyte[,] board)
         {
             Render(OnBoardCreated, board);
         }
 
         private void TurnStartedListener(PlayerType player, HashSet<Move> legalMoves)
         {
+            //System.Diagnostics.Debug.WriteLine("turnstarted heard " + DateTime.Now);
             Render(OnTurnStart, player, legalMoves);
         }
 
-        private void MovedPieceListener(Move move, Board board)
+        private void MovedPieceListener(Move move, sbyte[,] board)
         {
+            //System.Diagnostics.Debug.WriteLine("movedpiece heard " + DateTime.Now);
             Render(OnPieceMoved, move, board);
         }
 
@@ -84,16 +78,17 @@ namespace GameView
         }
         #endregion
 
-
         private void OnBoardCreated(object[] p)
         {
-            Board b = p[0] as Board;
+            sbyte[,] b = p[0] as sbyte[,];
 
-            checkerboard.SetBoard(b.GetBoard());
+            checkerboard.ClearAnimations();
+            checkerboard.SetBoard(b);
         }
 
         private void OnTurnStart(object[] p)
         {
+            //System.Diagnostics.Debug.WriteLine("turnstarted start " + DateTime.Now);
             PlayerType player = (PlayerType)p[0];
             HashSet<Move> moves = p[1] as HashSet<Move>;
 
@@ -106,8 +101,9 @@ namespace GameView
             }
             else if (player == PlayerType.AI)
             {
-                // uhhh
+                
             }
+            //System.Diagnostics.Debug.WriteLine("turnstarted finish " + DateTime.Now);
         }
 
         private void OnSpaceClicked(int x, int y)
@@ -134,36 +130,31 @@ namespace GameView
 
         private void OnPieceMoved(object[] p)
         {
+            //System.Diagnostics.Debug.WriteLine("piecemoved start " + DateTime.Now);
             Move move = p[0] as Move;
-            Board b = p[1] as Board;
+            sbyte[,] b = p[1] as sbyte[,];
 
             checkerboard.ClearAnimations();
-            checkerboard.SetBoard(b.GetBoard());
+            checkerboard.SetBoard(b);
 
             checkerboard.HighlightPiece(move.ToX, move.ToY, Color.Cyan);
             checkerboard.HighlightSpace(move.FromX, move.FromY, Color.Cyan);
+            //System.Diagnostics.Debug.WriteLine("piecemoved finish " + DateTime.Now);
         }
 
         private void OnGameWin(object[] p)
         {
             bool winner = (bool)p[0];
 
-            Thread.Sleep(1000);
-            checkerboard.ClearAnimations();
-            controller.StartGame();
-        }
-
-        private void LogMessage(string text)
-        {
-            debug.Text = text;
+            // animations??
         }
 
         private void Animate()
         {
             while (animating)
             {
-                Thread.Sleep(17); // 60fps
                 checkerboard.Invalidate();
+                Thread.Sleep(17); // 60fps
             }
         }
 

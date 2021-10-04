@@ -345,7 +345,7 @@ namespace Game
 
         public sbyte[,] GetBoard()
         {
-            return board;
+            return board.Clone() as sbyte[,];
         }
 
         /// <summary>
