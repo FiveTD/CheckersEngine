@@ -27,7 +27,7 @@ namespace EngineController
         public delegate void CreateBoard(sbyte[,] board);
         public event CreateBoard BoardCreated;
 
-        public delegate void WinGame(bool winner);
+        public delegate void WinGame(Winner winner);
         public event WinGame GameWon;
 
         public delegate void StartTurn(PlayerType player, HashSet<Move> legalMoves);
@@ -40,8 +40,6 @@ namespace EngineController
         private int depth;
 
         private (int, int) selectedPiece;
-
-        private bool gameWon;
 
         public GameController()
         {
@@ -61,13 +59,13 @@ namespace EngineController
 
         public void StartGame(int size = 8, int rows = 3)
         {
+            System.Diagnostics.Debug.WriteLine("ai depth {0}", depth);
+
             players[true] = PlayerType.Local;
             players[false] = PlayerType.AI;
 
             board = new Board(size, rows);
             BoardCreated(board.GetBoard());
-
-            gameWon = false;
 
             TurnStart();
         }
@@ -120,22 +118,17 @@ namespace EngineController
 
         private void TurnStart()
         {
-            //System.Diagnostics.Debug.WriteLine("start turnstart " + DateTime.Now);
-
-            if (board.Win(out bool winner))
+            Winner winner = board.Win();
+            if (winner != Winner.None)
             {
-                gameWon = true;
                 GameWon(winner);
 
                 Thread.Sleep(1000);
 
-                players[winner] = PlayerType.Local;
-                players[!winner] = PlayerType.AI;
+                depth++;
                 StartGame();
                 return;
             }
-
-            //System.Diagnostics.Debug.WriteLine("post win " + DateTime.Now);
 
             PlayerType next = players[board.Turn];
 
@@ -145,9 +138,7 @@ namespace EngineController
                     TurnStarted(next, board.LegalMoves());
                     break;
                 case PlayerType.AI:
-                    //System.Diagnostics.Debug.WriteLine("pre turnstarted event " + DateTime.Now);
                     TurnStarted(next, null);
-                    //System.Diagnostics.Debug.WriteLine("post turnstarted event " + DateTime.Now);
                     Thread moveThread = new Thread(AIMove);
                     moveThread.Start();
                     break;
@@ -157,18 +148,14 @@ namespace EngineController
         private void AIMove()
         {
             Move move = AI.Analyze(depth, board);
-            //System.Diagnostics.Debug.WriteLine("pre ai movepiece " + DateTime.Now);
             MovePiece(move);
-            //System.Diagnostics.Debug.WriteLine("post ai movepiece " + DateTime.Now);
         }
 
         public void MovePiece(Move move)
         {
             board.Move(move, false);
 
-            //System.Diagnostics.Debug.WriteLine("pre movedpiece " + DateTime.Now);
             MovedPiece(move, board.GetBoard());
-            //System.Diagnostics.Debug.WriteLine("post movedpiece " + DateTime.Now);
 
             TurnStart();
         }

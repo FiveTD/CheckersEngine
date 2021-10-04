@@ -1,8 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Game
 {
+    public enum Winner
+    {
+        Player1,
+        Player2,
+        Stalemate,
+        None
+    }
+
     public class Board
     {
         private sbyte[,] board;
@@ -17,6 +26,41 @@ namespace Game
 
         private LinkedList<Move> moveHistory = new LinkedList<Move>();
         private (int, int) justMoved = (-1, -1);
+        private Dictionary<sbyte[,], int> stalemateHistory = new Dictionary<sbyte[,], int>(new BoardEqualityComparer());
+
+        private class BoardEqualityComparer : IEqualityComparer<sbyte[,]>
+        {
+            public bool Equals([AllowNull] sbyte[,] x, [AllowNull] sbyte[,] y)
+            {
+                if ((x is null) != (y is null))
+                    return false;
+
+                if (x.GetLength(0) != y.GetLength(0) || x.GetLength(1) != y.GetLength(1))
+                    return false;
+
+                for (int i = 0; i < x.GetLength(0); i++)
+                {
+                    for (int j = 0; j < x.GetLength(1); j++)
+                    {
+                        if (x[i, j] != y[i, j])
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+
+            public int GetHashCode([DisallowNull] sbyte[,] obj)
+            {
+                int hash = 17;
+                foreach (sbyte i in obj)
+                {
+                    hash += 23 * i;
+                }
+
+                return hash;
+            }
+        }
 
         /// <summary>
         /// Creates a new checkers board.
@@ -101,9 +145,7 @@ namespace Game
             sbyte piece = PieceAt(move.FromX, move.FromY);
             bool player = PlayerAt(move.FromX, move.FromY);
 
-            if (piece == 0)
-                return false;
-            if (player != Turn)
+            if (piece == 0 || player != Turn)
                 return false;
 
             int xdist = Distance(move.FromX, move.ToX), ydist = Distance(move.FromY, move.ToY);
@@ -212,7 +254,10 @@ namespace Game
                             }
 
                             Move(move, false, false);
-                            move.chains = LegalMoves(move.ToX, move.ToY); // will be jumps available at next destination
+                            if (!move.Promoted)
+                            {
+                                move.chains = LegalMoves(move.ToX, move.ToY); // will be jumps available at next destination
+                            }
                             Unmove();
 
                             moves.Add(move);
@@ -287,6 +332,7 @@ namespace Game
             board[move.FromX, move.FromY] = 0;
 
             // Promotion
+            move.Promoted = (PieceAt(jumpx, jumpy) == PAWN); //cannot promote if already promoted
             if (move.ToX == 0 && turn == false)
             {
                 board[move.ToX, move.ToY] = -KING;
@@ -295,11 +341,21 @@ namespace Game
             {
                 board[move.ToX, move.ToY] = KING;
             }
+            else
+            {
+                move.Promoted = false;
+            }
 
             move.Piece = piece;
             move.Jumped = jumped;
             move.Turn = turn;
             moveHistory.AddLast(move);
+            sbyte[,] boardCopy = GetBoard();
+            if (stalemateHistory.ContainsKey(boardCopy))
+                stalemateHistory[boardCopy]++;
+            else
+                stalemateHistory.Add(boardCopy, 1);
+                
 
             if (move.chains.Count > 0)
             {
@@ -320,7 +376,9 @@ namespace Game
         {
             Move move = moveHistory.Last.Value;
 
-            board[move.FromX, move.FromY] = move.Piece;
+            stalemateHistory[board]--;
+
+            board[move.FromX, move.FromY] = move.Piece; //will be piece pre-promotion
             board[move.ToX, move.ToY] = 0;
             if (move.Jumped != 0)
             {
@@ -333,14 +391,39 @@ namespace Game
         }
 
         /// <summary>
-        /// Returns if the game has been won.
+        /// Returns the winner of the game.
         /// </summary>
         /// <param name="winner">The winning player.</param>
         /// <returns></returns>
-        public bool Win(out bool winner)
+        public Winner Win()
         {
-            winner = !Turn;
-            return LegalMoves().Count == 0;
+            if (stalemateHistory.ContainsKey(board) && stalemateHistory[board] >= 3)
+            {
+                return Winner.Stalemate;
+            }
+            else
+            {
+                return Win(LegalMoves().Count);
+            }
+        }
+
+        /// <summary>
+        /// Returns the winner of the game.
+        /// </summary>
+        /// <param name="legalMoves">A precalculated number of legal moves.
+        /// Significantly improves performance when provided.</param>
+        /// <returns></returns>
+        public Winner Win(int legalMoves)
+        {
+            if (stalemateHistory.ContainsKey(board) && stalemateHistory[board] >= 3)
+            {
+                return Winner.Stalemate;
+            }
+            else if (legalMoves == 0)
+            {
+                return !Turn ? Winner.Player1 : Winner.Player2;
+            }
+            return Winner.None;
         }
 
         public sbyte[,] GetBoard()
@@ -373,6 +456,11 @@ namespace Game
         {
             return Math.Abs(a - b);
         }
+
+        public override int GetHashCode()
+        {
+            return board.GetHashCode();
+        }
     }
 
     public class Move
@@ -384,6 +472,7 @@ namespace Game
         public sbyte Piece { get; set; }
         public sbyte Jumped { get; set; }
         public bool Turn { get; set; }
+        public bool Promoted { get; set; }
         public HashSet<Move> chains { get; set; }
 
         public Move()

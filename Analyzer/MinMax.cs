@@ -57,12 +57,14 @@ namespace Minimax
 
         private int Analyze(int depth, int alpha, int beta, Board board, HashSet<Move> moves)
         {
-            if (board.Win(out bool winner)) //if (moves.Count == 0)
+            switch(board.Win(moves.Count))
             {
-                if (winner) //if (!Board.Turn)
+                case Winner.Player1:
                     return board.Size * board.Size; // = every space is your king (impossibly high but not +inf)
-                else
+                case Winner.Player2:
                     return board.Size * board.Size * -1;
+                case Winner.Stalemate:
+                    return 0;
             }
 
             if (depth == 0)
@@ -87,7 +89,6 @@ namespace Minimax
                     scored.Add(board.GetBoard(), score);
                 }
 
-                System.Diagnostics.Debug.WriteLine(scored.Count);
                 return score;
             }
 

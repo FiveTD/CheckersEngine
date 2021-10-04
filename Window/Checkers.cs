@@ -52,13 +52,11 @@ namespace GameView
 
         private void TurnStartedListener(PlayerType player, HashSet<Move> legalMoves)
         {
-            //System.Diagnostics.Debug.WriteLine("turnstarted heard " + DateTime.Now);
             Render(OnTurnStart, player, legalMoves);
         }
 
         private void MovedPieceListener(Move move, sbyte[,] board)
         {
-            //System.Diagnostics.Debug.WriteLine("movedpiece heard " + DateTime.Now);
             Render(OnPieceMoved, move, board);
         }
 
@@ -72,7 +70,7 @@ namespace GameView
             Render(OnSelectionError, selection);
         }
 
-        private void GameWonListener(bool winner)
+        private void GameWonListener(Winner winner)
         {
             Render(OnGameWin, winner);
         }
@@ -88,7 +86,6 @@ namespace GameView
 
         private void OnTurnStart(object[] p)
         {
-            //System.Diagnostics.Debug.WriteLine("turnstarted start " + DateTime.Now);
             PlayerType player = (PlayerType)p[0];
             HashSet<Move> moves = p[1] as HashSet<Move>;
 
@@ -103,7 +100,6 @@ namespace GameView
             {
                 
             }
-            //System.Diagnostics.Debug.WriteLine("turnstarted finish " + DateTime.Now);
         }
 
         private void OnSpaceClicked(int x, int y)
@@ -130,7 +126,6 @@ namespace GameView
 
         private void OnPieceMoved(object[] p)
         {
-            //System.Diagnostics.Debug.WriteLine("piecemoved start " + DateTime.Now);
             Move move = p[0] as Move;
             sbyte[,] b = p[1] as sbyte[,];
 
@@ -139,12 +134,11 @@ namespace GameView
 
             checkerboard.HighlightPiece(move.ToX, move.ToY, Color.Cyan);
             checkerboard.HighlightSpace(move.FromX, move.FromY, Color.Cyan);
-            //System.Diagnostics.Debug.WriteLine("piecemoved finish " + DateTime.Now);
         }
 
         private void OnGameWin(object[] p)
         {
-            bool winner = (bool)p[0];
+            Winner winner = (Winner)p[0];
 
             // animations??
         }
