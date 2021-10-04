@@ -69,11 +69,11 @@ namespace Minimax
             {
                 int score;
 
-                //if (scored.ContainsKey(board.GetBoard()))
-                //{
-                //    score = scored[board.GetBoard()];
-                //}
-                //else
+                if (scored.ContainsKey(board.GetBoard()))
+                {
+                    score = scored[board.GetBoard()];
+                }
+                else
                 {
                     score = 0;
                     for (int i = 0; i < board.Size; i++)
@@ -84,9 +84,10 @@ namespace Minimax
                         }
                     }
 
-                    //scored.Add(board.GetBoard(), score);
+                    scored.Add(board.GetBoard(), score);
                 }
 
+                System.Diagnostics.Debug.WriteLine(scored.Count);
                 return score;
             }
 
