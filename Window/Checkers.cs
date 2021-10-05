@@ -1,15 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using EngineController;
 using Game;
+using System.Diagnostics;
 
 namespace GameView
 {
@@ -22,6 +18,9 @@ namespace GameView
         Thread animationUpdate;
         bool animating = true;
         Thread renderThread;
+
+        readonly Color legalHL = Color.Goldenrod;
+        readonly Color histHL = Color.White;
 
         public Checkers(GameController c)
         {
@@ -93,7 +92,7 @@ namespace GameView
             {
                 foreach (Move m in moves)
                 {
-                    checkerboard.HighlightPiece(m.FromX, m.FromY, Color.Yellow);
+                    checkerboard.HighlightPiece(m.FromX, m.FromY, legalHL);
                 }
             }
             else if (player == PlayerType.AI)
@@ -113,7 +112,7 @@ namespace GameView
 
             foreach (Move move in legalMoves)
             {
-                checkerboard.HighlightSpace(move.ToX, move.ToY, Color.Yellow);
+                checkerboard.HighlightSpace(move.ToX, move.ToY, legalHL);
             }
         }
 
@@ -132,8 +131,8 @@ namespace GameView
             checkerboard.ClearAnimations();
             checkerboard.SetBoard(b);
 
-            checkerboard.HighlightPiece(move.ToX, move.ToY, Color.Cyan);
-            checkerboard.HighlightSpace(move.FromX, move.FromY, Color.Cyan);
+            checkerboard.HighlightPiece(move.ToX, move.ToY, histHL);
+            checkerboard.HighlightSpace(move.FromX, move.FromY, histHL);
         }
 
         private void OnGameWin(object[] p)
@@ -173,6 +172,7 @@ namespace GameView
         private void Checkers_FormClosing(object sender, FormClosingEventArgs e)
         {
             animating = false;
+            controller.Quit(); //forces wait until all threads closed
         }
     }
 }

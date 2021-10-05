@@ -24,7 +24,7 @@ namespace Game
         const sbyte PAWN = 1;
         const sbyte KING = 2;
 
-        private LinkedList<Move> moveHistory = new LinkedList<Move>();
+        private Stack<Move> moveHistory = new Stack<Move>();
         private (int, int) justMoved = (-1, -1);
         private Dictionary<sbyte[,], int> stalemateHistory = new Dictionary<sbyte[,], int>(new BoardEqualityComparer());
 
@@ -349,7 +349,7 @@ namespace Game
             move.Piece = piece;
             move.Jumped = jumped;
             move.Turn = turn;
-            moveHistory.AddLast(move);
+            moveHistory.Push(move);
             sbyte[,] boardCopy = GetBoard();
             if (stalemateHistory.ContainsKey(boardCopy))
                 stalemateHistory[boardCopy]++;
@@ -362,6 +362,7 @@ namespace Game
                 return move.chains;
             }
 
+            
             if (switchTurn) Turn = !Turn;
             if (calcNext)
                 return LegalMoves();
@@ -374,7 +375,7 @@ namespace Game
         /// </summary>
         public void Unmove()
         {
-            Move move = moveHistory.Last.Value;
+            Move move = moveHistory.Pop();
 
             stalemateHistory[board]--;
 
@@ -387,7 +388,6 @@ namespace Game
             }
 
             Turn = move.Turn;
-            moveHistory.RemoveLast();
         }
 
         /// <summary>

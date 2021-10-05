@@ -41,6 +41,11 @@ namespace EngineController
 
         private (int, int) selectedPiece;
 
+        LinkedList<Thread> movers = new LinkedList<Thread>();
+        bool running = true;
+
+        bool moving = false;
+
         public GameController()
         {
             players = new Dictionary<bool, PlayerType>();
@@ -59,9 +64,7 @@ namespace EngineController
 
         public void StartGame(int size = 8, int rows = 3)
         {
-            System.Diagnostics.Debug.WriteLine("ai depth {0}", depth);
-
-            players[true] = PlayerType.Local;
+            players[true] = PlayerType.AI;
             players[false] = PlayerType.AI;
 
             board = new Board(size, rows);
@@ -118,6 +121,8 @@ namespace EngineController
 
         private void TurnStart()
         {
+            if (!running) return;
+
             Winner winner = board.Win();
             if (winner != Winner.None)
             {
@@ -140,6 +145,7 @@ namespace EngineController
                 case PlayerType.AI:
                     TurnStarted(next, null);
                     Thread moveThread = new Thread(AIMove);
+                    movers.AddLast(moveThread);
                     moveThread.Start();
                     break;
             }
@@ -147,8 +153,18 @@ namespace EngineController
 
         private void AIMove()
         {
-            Move move = AI.Analyze(depth, board);
+            while (moving) ;
+
+            moving = true;
+            Move move;
+            if (board.Turn)
+                move = AI.Analyze(2, board);
+            else
+                move = AI.Analyze(2, board);
             MovePiece(move);
+            Thread.Sleep(500);
+            moving = false;
+            movers.RemoveFirst(); //removes self from queue
         }
 
         public void MovePiece(Move move)
@@ -158,6 +174,15 @@ namespace EngineController
             MovedPiece(move, board.GetBoard());
 
             TurnStart();
+        }
+
+        /// <summary>
+        /// Closes all active threads and prevents the creation of new threads.
+        /// </summary>
+        public void Quit()
+        {
+            running = false;
+            movers.Last.Value.Join();
         }
     }
 }
