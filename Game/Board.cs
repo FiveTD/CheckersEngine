@@ -192,32 +192,33 @@ namespace Game
         }
 
         /// <summary>
-        /// Returns all legal moves on the board.
+        /// Returns all legal moves on the board, sorted by score.
         /// </summary>
         /// <returns></returns>
         /// 
-        public HashSet<Move> LegalMoves()
+        public IEnumerable<Move> LegalMoves()
         {
             if (justMoved != (-1, -1) && Turn == PlayerAt(justMoved.Item1, justMoved.Item2))
                 return LegalMoves(justMoved.Item1, justMoved.Item2);
 
-            HashSet<Move> moves = new HashSet<Move>();
+            List<Move> moves = new List<Move>();
             JumpRequired = false;
             bool jumped = false;
 
             HashSet<(int, int)> validLocs = new HashSet<(int, int)>(locs[Turn]);
             foreach ((int, int) p in validLocs)
             {
-                HashSet<Move> newMoves = LegalMoves(p.Item1, p.Item2);
+                IEnumerable<Move> newMoves = LegalMoves(p.Item1, p.Item2);
                 if (JumpRequired && !jumped)
                 {
                     moves.Clear();
                     jumped = true;
                 }
 
-                moves.UnionWith(newMoves);
+                moves.AddRange(newMoves);
             }
 
+            moves.Sort();
             return moves;
         }
 
@@ -227,8 +228,8 @@ namespace Game
         /// </summary>
         /// <param name="x"></param>
         /// <param name="y"></param>
-        /// <returns></returns>
-        public HashSet<Move> LegalMoves(int x, int y)
+        /// <returns>An IEnumberable of legal moves if any exist, null if not.</returns>
+        public IEnumerable<Move> LegalMoves(int x, int y)
         {
             HashSet<Move> moves = new HashSet<Move>();
 
@@ -321,7 +322,7 @@ namespace Game
         /// Assumes legality.
         /// </summary>
         /// <returns>The legal moves after the performed move.</returns>
-        public HashSet<Move> Move(Move move, bool calcNext = true, bool switchTurn = true)
+        public IEnumerable<Move> Move(Move move, bool calcNext = true, bool switchTurn = true)
         {
             sbyte piece = SignedPieceAt(move.FromX, move.FromY);
             bool turn = PlayerAt(move.FromX, move.FromY);
@@ -371,7 +372,7 @@ namespace Game
                 stalemateHistory.Add(boardCopy, 1);
                 
 
-            if (move.Chains.Count > 0)
+            if (move.HasChains())
             {
                 return move.Chains;
             }
@@ -423,27 +424,27 @@ namespace Game
             }
             else
             {
-                return Win(LegalMoves().Count);
+                return Win(LegalMoves());
             }
         }
 
         /// <summary>
         /// Returns the winner of the game.
         /// </summary>
-        /// <param name="legalMoves">A precalculated number of legal moves.
+        /// <param name="legalMoves">A precalculated list of legal moves.
         /// Significantly improves performance when provided.</param>
         /// <returns></returns>
-        public Winner Win(int legalMoves)
+        public Winner Win(IEnumerable<Move> legalMoves)
         {
             if (stalemateHistory.ContainsKey(board) && stalemateHistory[board] >= 3)
             {
                 return Winner.Stalemate;
             }
-            else if (legalMoves == 0)
+            else if (!legalMoves.Empty())
             {
-                return !Turn ? Winner.Player1 : Winner.Player2;
+                return Winner.None;
             }
-            return Winner.None;
+            return !Turn ? Winner.Player1 : Winner.Player2;
         }
 
         public sbyte[,] GetBoard()
@@ -483,36 +484,13 @@ namespace Game
         }
     }
 
-    public class Move
+    public static class EnumerableExtentions
     {
-        public int FromX { get; set; }
-        public int FromY { get; set; }
-        public int ToX { get; set; }
-        public int ToY { get; set; }
-        public sbyte Piece { get; set; }
-        public sbyte Jumped { get; set; }
-        public bool Turn { get; set; }
-        public bool Promoted { get; set; }
-        public HashSet<Move> Chains { get; set; }
-
-        public Move()
+        public static bool Empty(this IEnumerable<Move> moves)
         {
-            Chains = new HashSet<Move>();
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj is null) return false;
-
-            Move o = obj as Move;
-
-            return FromX == o.FromX && FromY == o.FromY &&
-                ToX == o.ToX && ToY == o.ToY;
-        }
-
-        public override int GetHashCode()
-        {
-            return FromX + FromY * 10 + ToX * 100 + ToY * 1000;
+            foreach (Move _ in moves)
+                return false;
+            return true;
         }
     }
 }

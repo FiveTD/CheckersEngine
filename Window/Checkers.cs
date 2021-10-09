@@ -51,7 +51,7 @@ namespace GameView
             Render(OnBoardCreated, board);
         }
 
-        private void TurnStartedListener(PlayerType player, HashSet<Move> legalMoves)
+        private void TurnStartedListener(PlayerType player, IEnumerable<Move> legalMoves)
         {
             Render(OnTurnStart, player, legalMoves);
         }
@@ -61,7 +61,7 @@ namespace GameView
             Render(OnPieceMoved, move, board);
         }
 
-        private void PieceSelectedListener(HashSet<Move> legalMoves)
+        private void PieceSelectedListener(IEnumerable<Move> legalMoves)
         {
             Render(OnPieceSelected, legalMoves);
         }
@@ -88,7 +88,7 @@ namespace GameView
         private void OnTurnStart(object[] p)
         {
             PlayerType player = (PlayerType)p[0];
-            HashSet<Move> moves = p[1] as HashSet<Move>;
+            IEnumerable<Move> moves = p[1] as IEnumerable<Move>;
 
             if (player == PlayerType.Local)
             {
@@ -110,7 +110,7 @@ namespace GameView
 
         private void OnPieceSelected(object[] p)
         {
-            HashSet<Move> legalMoves = p[0] as HashSet<Move>;
+            IEnumerable<Move> legalMoves = p[0] as IEnumerable<Move>;
 
             foreach (Move move in legalMoves)
             {

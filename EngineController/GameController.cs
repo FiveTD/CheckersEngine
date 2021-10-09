@@ -15,7 +15,7 @@ namespace EngineController
 
     public class GameController
     {
-        public delegate void SelectPiece(HashSet<Move> legalMoves);
+        public delegate void SelectPiece(IEnumerable<Move> legalMoves);
         public event SelectPiece PieceSelected;
 
         public delegate void ErrorSelect((int, int) selection);
@@ -30,7 +30,7 @@ namespace EngineController
         public delegate void WinGame(Winner winner);
         public event WinGame GameWon;
 
-        public delegate void StartTurn(PlayerType player, HashSet<Move> legalMoves);
+        public delegate void StartTurn(PlayerType player, IEnumerable<Move> legalMoves);
         public event StartTurn TurnStarted;
 
         private Board board;
@@ -64,7 +64,7 @@ namespace EngineController
 
         public void StartGame(int size = 8, int rows = 3)
         {
-            players[true] = PlayerType.AI;
+            players[true] = PlayerType.Local;
             players[false] = PlayerType.AI;
 
             board = new Board(size, rows);
@@ -78,9 +78,9 @@ namespace EngineController
         {
             if (board.PieceAt(x, y) != 0 && board.PlayerAt(x, y) == board.Turn)
             {
-                HashSet<Move> moves = board.LegalMoves(x, y);
+                IEnumerable<Move> moves = board.LegalMoves(x, y);
 
-                if (moves.Count > 0)
+                if (!moves.Empty())
                 {
                     selectedPiece = (x, y);
                     PieceSelected(moves);
@@ -98,7 +98,7 @@ namespace EngineController
                     ToY = y
                 };
 
-                HashSet<Move> moves = board.LegalMoves(selectedPiece.Item1, selectedPiece.Item2);
+                IEnumerable<Move> moves = board.LegalMoves(selectedPiece.Item1, selectedPiece.Item2);
 
                 foreach (Move legal in moves)
                 {
@@ -163,7 +163,7 @@ namespace EngineController
             else
                 move = AI.Analyze(5);
             MovePiece(move);
-            Thread.Sleep(500);
+            //Thread.Sleep(500);
             moving = false;
             movers.RemoveFirst(); //removes self from queue
         }

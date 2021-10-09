@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Animation.cs" />
+    <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="PieceAnimation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

@@ -25,7 +25,7 @@ namespace Minimax
                 int maxScore = int.MinValue;
                 foreach (Move move in board.LegalMoves())
                 {
-                    HashSet<Move> moves = board.Move(move);
+                    IEnumerable<Move> moves = board.Move(move);
                     int score = Analyze(depth - 1, int.MinValue, int.MaxValue, board, moves);
                     board.Unmove();
                     if (score >= maxScore)
@@ -44,7 +44,7 @@ namespace Minimax
                 int minScore = int.MaxValue;
                 foreach (Move move in board.LegalMoves())
                 {
-                    HashSet<Move> moves = board.Move(move);
+                    IEnumerable<Move> moves = board.Move(move);
                     int score = Analyze(depth - 1, int.MinValue, int.MaxValue, board, moves);
                     board.Unmove();
                     if (score <= minScore)
@@ -62,9 +62,9 @@ namespace Minimax
             return bestMove;
         }
 
-        private int Analyze(int depth, int alpha, int beta, Board board, HashSet<Move> moves)
+        private int Analyze(int depth, int alpha, int beta, Board board, IEnumerable<Move> moves)
         {
-            switch(board.Win(moves.Count))
+            switch(board.Win(moves))
             {
                 case Winner.Player1:
                     return board.Size * board.Size; // = every space is your king (impossibly high but not +inf)
@@ -104,7 +104,7 @@ namespace Minimax
                 int maxScore = int.MinValue;
                 foreach (Move move in moves)
                 {
-                    HashSet<Move> newMoves = board.Move(move);
+                    IEnumerable<Move> newMoves = board.Move(move);
                     int score = Analyze(depth - 1, alpha, beta, board, newMoves);
                     board.Unmove();
                     maxScore = Math.Max(score, maxScore);
@@ -120,7 +120,7 @@ namespace Minimax
                 int minScore = int.MaxValue;
                 foreach (Move move in moves)
                 {
-                    HashSet<Move> newMoves = board.Move(move);
+                    IEnumerable<Move> newMoves = board.Move(move);
                     int score = Analyze(depth - 1, alpha, beta, board, newMoves);
                     board.Unmove();
                     minScore = Math.Min(score, minScore);
