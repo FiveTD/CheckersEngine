@@ -26,9 +26,11 @@ namespace GameView
         {
             InitializeComponent();
 
-            checkerboard = new CheckerBoard(null);
-            checkerboard.Location = new Point(0, 0);
-            checkerboard.Size = new Size(800, 800);
+            checkerboard = new CheckerBoard(null)
+            {
+                Location = new Point(0, 0),
+                Size = new Size(800, 800)
+            };
             checkerboard.SpaceClicked += OnSpaceClicked;
             Controls.Add(checkerboard);
 

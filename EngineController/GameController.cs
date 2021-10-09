@@ -48,13 +48,13 @@ namespace EngineController
 
         public GameController()
         {
-            players = new Dictionary<bool, PlayerType>();
-            players.Add(true, PlayerType.None);
-            players.Add(false, PlayerType.None);
+            players = new Dictionary<bool, PlayerType>
+            {
+                { true, PlayerType.None },
+                { false, PlayerType.None }
+            };
 
             selectedPiece = (-1, -1);
-
-            AI = new Analyzer();
         }
 
         public void SetAIDepth(int depth)
@@ -69,6 +69,7 @@ namespace EngineController
 
             board = new Board(size, rows);
             BoardCreated(board.GetBoard());
+            AI = new Analyzer(board);
 
             TurnStart();
         }
@@ -158,9 +159,9 @@ namespace EngineController
             moving = true;
             Move move;
             if (board.Turn)
-                move = AI.Analyze(2, board);
+                move = AI.Analyze(5);
             else
-                move = AI.Analyze(2, board);
+                move = AI.Analyze(5);
             MovePiece(move);
             Thread.Sleep(500);
             moving = false;
@@ -182,7 +183,8 @@ namespace EngineController
         public void Quit()
         {
             running = false;
-            movers.Last.Value.Join();
+            if (movers.Count > 0)
+                movers.Last.Value.Join();
         }
     }
 }

@@ -8,7 +8,14 @@ namespace Minimax
     {
         private Dictionary<sbyte[,], int> scored = new Dictionary<sbyte[,], int>();
 
-        public Move Analyze(int depth, Board board)
+        Board board;
+
+        public Analyzer(Board board)
+        {
+            this.board = board;
+        }
+
+        public Move Analyze(int depth)
         {
             Move bestMove = null;
             int alpha = int.MinValue, beta = int.MaxValue;
