@@ -21,12 +21,16 @@ namespace Game
 
         public bool JumpRequired { get; private set; }
 
-        const sbyte PAWN = 1;
-        const sbyte KING = 2;
+        public const sbyte PAWN = 1;
+        public const sbyte KING = 2;
 
         private Stack<Move> moveHistory = new Stack<Move>();
         private (int, int) justMoved = (-1, -1);
         private Dictionary<sbyte[,], int> stalemateHistory = new Dictionary<sbyte[,], int>(new BoardEqualityComparer());
+
+        private HashSet<(int, int)> p1Locs = new HashSet<(int, int)>();
+        private HashSet<(int, int)> p2Locs = new HashSet<(int, int)>();
+        private Dictionary<bool, HashSet<(int, int)>> locs = new Dictionary<bool, HashSet<(int, int)>>();
 
         private class BoardEqualityComparer : IEqualityComparer<sbyte[,]>
         {
@@ -35,12 +39,12 @@ namespace Game
                 if ((x is null) != (y is null))
                     return false;
 
-                if (x.GetLength(0) != y.GetLength(0) || x.GetLength(1) != y.GetLength(1))
-                    return false;
+                //if (x.GetLength(0) != y.GetLength(0) || x.GetLength(1) != y.GetLength(1))
+                //    return false;
 
                 for (int i = 0; i < x.GetLength(0); i++)
                 {
-                    for (int j = 0; j < x.GetLength(1); j++)
+                    for (int j = i % 2; j < x.GetLength(1); j += 2)
                     {
                         if (x[i, j] != y[i, j])
                             return false;
@@ -72,6 +76,9 @@ namespace Game
             Size = size;
             board = new sbyte[size, size];
 
+            locs.Add(true, p1Locs);
+            locs.Add(false, p2Locs);
+
             for (int i = 0; i < rows; i++)
             {
                 for (int j = 0; j < size; j += 2)
@@ -80,6 +87,9 @@ namespace Game
 
                     board[i, j] = PAWN;
                     board[size - i - 1, size - j - 1] = -PAWN;
+
+                    locs[true].Add((i, j));
+                    locs[false].Add((size - i - 1, size - j - 1));
                 }
             }
 
@@ -195,20 +205,17 @@ namespace Game
             JumpRequired = false;
             bool jumped = false;
 
-            for (int i = 0; i < Size; i ++)
+            HashSet<(int, int)> validLocs = new HashSet<(int, int)>(locs[Turn]);
+            foreach ((int, int) p in validLocs)
             {
-                for (int j = 0; j < Size; j += 2)
+                HashSet<Move> newMoves = LegalMoves(p.Item1, p.Item2);
+                if (JumpRequired && !jumped)
                 {
-                    if (i % 2 != j % 2) j++; //black offset
-                    HashSet<Move> newMoves = LegalMoves(i, j);
-                    if (JumpRequired && !jumped)
-                    {
-                        moves.Clear();
-                        jumped = true;
-                    }
-
-                    moves.UnionWith(newMoves);
+                    moves.Clear();
+                    jumped = true;
                 }
+
+                moves.UnionWith(newMoves);
             }
 
             return moves;
@@ -256,7 +263,7 @@ namespace Game
                             Move(move, false, false);
                             if (!move.Promoted)
                             {
-                                move.chains = LegalMoves(move.ToX, move.ToY); // will be jumps available at next destination
+                                move.Chains = LegalMoves(move.ToX, move.ToY); // will be jumps available at next destination
                             }
                             Unmove();
 
@@ -331,6 +338,13 @@ namespace Game
             board[move.ToX, move.ToY] = board[move.FromX, move.FromY];
             board[move.FromX, move.FromY] = 0;
 
+            locs[turn].Remove((move.FromX, move.FromY));
+            locs[turn].Add((move.ToX, move.ToY));
+            if (isJump)
+            {
+                locs[!turn].Remove((jumpx, jumpy));
+            }
+
             // Promotion
             move.Promoted = (PieceAt(jumpx, jumpy) == PAWN); //cannot promote if already promoted
             if (move.ToX == 0 && turn == false)
@@ -357,9 +371,9 @@ namespace Game
                 stalemateHistory.Add(boardCopy, 1);
                 
 
-            if (move.chains.Count > 0)
+            if (move.Chains.Count > 0)
             {
-                return move.chains;
+                return move.Chains;
             }
 
             
@@ -376,18 +390,24 @@ namespace Game
         public void Unmove()
         {
             Move move = moveHistory.Pop();
+            
+            Turn = move.Turn;
 
             stalemateHistory[board]--;
 
             board[move.FromX, move.FromY] = move.Piece; //will be piece pre-promotion
             board[move.ToX, move.ToY] = 0;
+
+            locs[Turn].Remove((move.ToX, move.ToY));
+            locs[Turn].Add((move.FromX, move.FromY));
+            
             if (move.Jumped != 0)
             {
                 Midpoint(move, out int jumpx, out int jumpy);
                 board[jumpx, jumpy] = move.Jumped;
-            }
 
-            Turn = move.Turn;
+                locs[!Turn].Add((jumpx, jumpy));
+            }
         }
 
         /// <summary>
@@ -473,11 +493,11 @@ namespace Game
         public sbyte Jumped { get; set; }
         public bool Turn { get; set; }
         public bool Promoted { get; set; }
-        public HashSet<Move> chains { get; set; }
+        public HashSet<Move> Chains { get; set; }
 
         public Move()
         {
-            chains = new HashSet<Move>();
+            Chains = new HashSet<Move>();
         }
 
         public override bool Equals(object obj)
